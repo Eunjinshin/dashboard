@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { handleSearchApi, type SearchAllParams } from '../api/handleSearchApi';
 import { useLoading } from './useLoading';
-import { useForm } from './useForm';
 import { DETAIL_DEFAULT_VALUES } from '../constants/defaultValue';
 import { DETAIL_FILTER_OPTION, NAV_SOURCE } from '../constants/labels';
 import { useLocation } from 'react-router-dom';
@@ -14,37 +13,42 @@ interface NavigationState {
     status?: string;
 }
 
+// 1. 상태(Params)를 한 번에 관리하도록 인터페이스 정의
+interface SearchParams {
+    labels: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    page: number;
+    limit: number;
+}
+
 export const useDetailState = () => {
     const location = useLocation();
     const state = location.state as NavigationState | null;
 
-    // 1. 필터 폼 관리
-    const { values: filters, setValues: setFilters } = useForm({
+    // 2. 검색 조건, 페이지, 리밋 상태를 하나로 통합
+    const [searchParams, setSearchParams] = useState<SearchParams>({
         labels: state?.labels || DETAIL_DEFAULT_VALUES.PROJECT,
         status: state?.status || (state?.from === NAV_SOURCE.GANTT ? DETAIL_FILTER_OPTION.ALL : DETAIL_DEFAULT_VALUES.STATUS),
         startDate: state?.date || '',
-        endDate: state?.date || ''
+        endDate: state?.date || '',
+        page: 1,
+        limit: 10,
     });
 
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [limit, setLimit] = useState<number>(10);
     const [issues, setIssues] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
-
-    // useLoading 훅 사용
     const { isLoading, withLoading } = useLoading();
 
-    const fetchIssues = useCallback(async (currentFilters: any) => {
-        if (!currentFilters.startDate || !currentFilters.endDate) return;
+    // 3. API Fetch 함수 (의존성을 최소화하고 searchParams를 인자로 받아 곧바로 실행)
+    const fetchIssues = useCallback(async (params: SearchParams) => {
+        if (!params.startDate || !params.endDate) return;
 
         await withLoading(async () => {
             const apiParams: SearchAllParams = {
-                labels: currentFilters.labels,
-                startDate: currentFilters.startDate,
-                endDate: currentFilters.endDate,
-                status: currentFilters.status,
-                page: currentPage,
-                limit: limit
+                ...params // 현재 파라미터를 그대로 넘겨줍니다. 
+                // (만약 api 인터페이스와 파라미터 구조가 완벽히 일치하면 이렇게 전개 구문 구조분해 재조립 가능합니다)
             };
 
             const response = await handleSearchApi(apiParams);
@@ -57,34 +61,43 @@ export const useDetailState = () => {
                 setTotalCount(response.totalCount || 0);
             }
         });
-    }, [currentPage, limit, withLoading]);
+    }, [withLoading]);
 
-    // 필터 변경 핸들러
-    const handleFilterChange = useCallback((newFilters: any) => {
-        setFilters(newFilters);
-        setCurrentPage(1); // 필터 변경 시 첫 페이지로 초기화
-    }, [setFilters]);
+    // 4. 핸들러 단순화
+    // 필터 조건(날짜, 상태, 라벨) 변경 핸들러
+    const handleFilterChange = useCallback((newFilters: { status: string; startDate: string; endDate: string; labels: string }) => {
+        setSearchParams(prev => ({
+            ...prev,
+            ...newFilters,
+            page: 1
+        }));
+    }, []);
 
     // 페이지 변경 핸들러
     const handlePageChange = useCallback((page: number) => {
-        setCurrentPage(page);
+        setSearchParams(prev => ({ ...prev, page }));
     }, []);
 
-    // 리밋 변경 핸들러
-    const handleLimitChange = useCallback((newLimit: number) => {
-        setLimit(newLimit);
-        setCurrentPage(1);
+    // 목록 개수 핸들러
+    const handleLimitChange = useCallback((limit: number) => {
+        setSearchParams(prev => ({ ...prev, limit, page: 1 }));
     }, []);
 
-    // 데이터 조회 (필터, 페이지, limit 변경 시 실행)
+    // 5. useEffect 의존성 (searchParams 객체 자체가 렌더링될 때만 감시)
+    // 파라미터 상태가 변경될 때마다 자동 검색
     useEffect(() => {
-        fetchIssues(filters);
-    }, [fetchIssues, filters]);
+        fetchIssues(searchParams);
+    }, [fetchIssues, searchParams]);
 
     return {
-        filters,
-        currentPage,
-        limit,
+        filters: { // 기존 UI 컴포넌트와의 호환성을 위해 형태는 유지
+            status: searchParams.status,
+            startDate: searchParams.startDate,
+            endDate: searchParams.endDate,
+            labels: searchParams.labels
+        },
+        currentPage: searchParams.page,
+        limit: searchParams.limit,
         issues,
         totalCount,
         isLoading,
