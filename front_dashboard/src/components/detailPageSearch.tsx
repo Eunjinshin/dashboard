@@ -7,6 +7,10 @@ import { DatePicker } from './DatePicker';
 import { StatusSelect } from './StatusSelect';
 import { ProjectSelect } from './projectSelect';
 
+/**
+ * 상세 페이지 검색 필터 컴포넌트
+ */
+
 interface DetailPageSearchProps {
     initialStatus?: string;
     initialDate?: string;
@@ -14,9 +18,6 @@ interface DetailPageSearchProps {
     onFilterChange: (params: { status: string; startDate: string; endDate: string; labels: string }) => void;
 }
 
-/**
- * 상세 페이지 검색 필터 컴포넌트
- */
 export const DetailPageSearch: React.FC<DetailPageSearchProps> = ({
     initialStatus = DETAIL_DEFAULT_VALUES.STATUS,
     initialDate = '',

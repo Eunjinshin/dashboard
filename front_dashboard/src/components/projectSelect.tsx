@@ -1,11 +1,9 @@
-
+import { useEffect, useState } from "react";
+import { fetchProjectList } from "../api/handleSearchApi";
 
 /**
  * 프로젝트 선택 부분
  */
-
-import { useEffect, useState } from "react";
-import { fetchProjectList } from "../api/handleSearchApi";
 
 interface ProjectSelectProps {
     filters: {
