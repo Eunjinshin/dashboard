@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import React, { use } from 'react';
+import React from 'react';
 import { Line } from 'react-chartjs-2';
 import { useNavigate } from 'react-router-dom';
 import { GANTT_LABELS } from '../constants/labels';
@@ -28,13 +28,6 @@ interface IssueData {
   date: string;
   count: number;
 }
-/**
- * 간트 차트 컴포넌트
- * 
- * @param issueData 이슈 데이터
- * @param project 프로젝트명
- * @returns 간트 차트 컴포넌트
- */
 
 export const GantChart: React.FC<{ issueData: IssueData[], project: string }> = ({ issueData, project }) => {
 
@@ -43,7 +36,7 @@ export const GantChart: React.FC<{ issueData: IssueData[], project: string }> = 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    onClick: (event: any, elements: any[]) => {
+    onClick: (_event: any, elements: any[]) => { // event -> _event로 변경 (사용하지 않을 경우 대비)
       if (elements.length > 0) {
         const index = elements[0].index;
         const selectedDate = issueData[index].date;
@@ -60,11 +53,14 @@ export const GantChart: React.FC<{ issueData: IssueData[], project: string }> = 
       }
     },
     plugins: {
-      legend: { position: 'top' },
+      legend: { position: 'top' as const }, // as const 추가
       title: { display: true, text: GANTT_LABELS.TITLE },
     },
     onHover: (event: any, chartElement: any) => {
-      event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+      // chartElement가 존재할 때만 커서 변경
+      if (event.native && event.native.target) {
+        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+      }
     }
   };
 
