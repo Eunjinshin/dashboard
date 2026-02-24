@@ -11,7 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 // Vercel 프론트엔드 주소 허용
-                .allowedOrigins("https://dashboard-drab-phi-84.vercel.app") 
+                .allowedOrigins("https://dashboard-eunjinshins-projects.vercel.app") 
                 // 허용할 HTTP 메서드
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 // 모든 헤더 허용
